@@ -707,7 +707,8 @@ const englishTranslations = {
   'Exporter en PDF': 'Export PDF',
   'Exporter iCal': 'Export iCal',
   'Export du calendrier': 'Calendar export',
-  'Synchroniser Google Calendar': 'Sync Google Calendar',
+  '📤 Préparer l’import Google Calendar': '📤 Prepare Google Calendar import',
+  '🔗 Synchroniser Google Calendar': '🔗 Sync Google Calendar',
   'Modèles d’événements': 'Event templates',
   'Créer l’événement': 'Create event',
   '＋ Ajouter': '＋ Add',
@@ -813,7 +814,6 @@ const englishTranslations = {
   'Téléversement de fichiers - Fonctionnalité à venir': 'File uploads — coming soon',
   'Vue quotidienne - Fonctionnalité à venir': 'Daily view — coming soon',
   'Vue mensuelle - Fonctionnalité à venir': 'Monthly view — coming soon',
-  'Synchronisation Google Calendar - Fonctionnalité à venir (nécessite OAuth)': 'Google Calendar sync — coming soon (OAuth required)',
   '1 heure avant': '1 hour before',
   '1 heure': '1 hour',
   '30 minutes avant': '30 minutes before',
@@ -3800,13 +3800,14 @@ function exportScheduleToPdf() {
 }
 
 // Export calendar to iCal
-function exportToIcal() {
+function exportToIcal({ source = 'download' } = {}) {
   const escapeIcal = value => String(value || '')
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r?\n/g, '\\n');
   const toIcalDate = date => `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+  const addLocalDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
   const toIcalTime = time => `${time.slice(0, 2)}${time.slice(3, 5)}00`;
   const weekdayNumbers = { Dimanche: 0, Lundi: 1, Mardi: 2, Mercredi: 3, Jeudi: 4, Vendredi: 5, Samedi: 6 };
   const events = [];
@@ -3814,18 +3815,26 @@ function exportToIcal() {
   // Add recurring weekly course events using the actual day and time from each course.
   myCourses.forEach(course => {
     course.schedule.forEach(schedule => {
-      const [start, end] = schedule.time.split('-');
+      const [start, end] = schedule.time.split(/[-–]/);
       const weekday = weekdayNumbers[schedule.day];
       if (weekday === undefined || !start || !end) return;
       const firstDate = new Date();
+      firstDate.setHours(0, 0, 0, 0);
       const delta = (weekday - firstDate.getDay() + 7) % 7;
-      firstDate.setDate(firstDate.getDate() + delta);
+      const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+      const startMinutes = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
+      firstDate.setDate(firstDate.getDate() + delta + (delta === 0 && startMinutes <= currentMinutes ? 7 : 0));
+      const semesterMatch = String(course.semester || '').match(/(Printemps|Automne|Spring|Fall)\s+(\d{4})/i);
+      const semesterYear = Number(semesterMatch?.[2]) || firstDate.getFullYear();
+      const semesterEnd = new Date(semesterYear, /Printemps|Spring/i.test(semesterMatch?.[1] || '') ? 5 : 11, /Printemps|Spring/i.test(semesterMatch?.[1] || '') ? 30 : 31);
+      const occurrenceCount = Math.max(0, Math.floor((semesterEnd - firstDate) / (7 * 24 * 60 * 60 * 1000)) + 1);
+      if (occurrenceCount === 0) return;
       events.push([
         'BEGIN:VEVENT',
         `UID:course-${course.id}-${weekday}@planify.local`,
         `DTSTART:${toIcalDate(firstDate)}T${toIcalTime(start)}`,
         `DTEND:${toIcalDate(firstDate)}T${toIcalTime(end)}`,
-        'RRULE:FREQ=WEEKLY;UNTIL=20261231T235959Z',
+        `RRULE:FREQ=WEEKLY;COUNT=${occurrenceCount}`,
         `SUMMARY:${escapeIcal(course.name)}`,
         `LOCATION:${escapeIcal(course.room)}`,
         `DESCRIPTION:${escapeIcal(`Cours avec ${course.instructor}`)}`,
@@ -3835,6 +3844,7 @@ function exportToIcal() {
   });
 
   personalEvents.forEach(event => {
+    if (!event.date || !event.startTime) return;
     const date = event.date.replace(/-/g, '');
     const fields = [
       'BEGIN:VEVENT',
@@ -3849,6 +3859,22 @@ function exportToIcal() {
     events.push(fields.join('\r\n'));
   });
 
+  myCourses.forEach(course => (course.assignments || []).forEach(assignment => {
+    if (!assignment.due || assignment.status === 'completed') return;
+    const dueDate = new Date(`${assignment.due}T00:00:00`);
+    const endDate = addLocalDays(dueDate, 1);
+    events.push([
+      'BEGIN:VEVENT',
+      `UID:assignment-${course.id}-${encodeURIComponent(assignment.name)}@planify.local`,
+      `DTSTART;VALUE=DATE:${toIcalDate(dueDate)}`,
+      `DTEND;VALUE=DATE:${toIcalDate(endDate)}`,
+      `SUMMARY:${escapeIcal(`Devoir : ${assignment.name}`)}`,
+      `DESCRIPTION:${escapeIcal(`Cours : ${course.name}`)}`,
+      `LOCATION:${escapeIcal(course.room || '')}`,
+      'END:VEVENT'
+    ].join('\r\n'));
+  }));
+
   const icalContent = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PLANIFY//Calendar//FR', 'CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n');
   const blob = new Blob([icalContent], { type: 'text/calendar' });
   const url = URL.createObjectURL(blob);
@@ -3858,20 +3884,30 @@ function exportToIcal() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   
   addNotification({
     type: 'system',
     icon: '📥',
-    title: 'Export réussi',
-    message: 'Votre calendrier a été exporté au format iCal',
+    title: source === 'google' ? 'Fichier Google Calendar prêt' : 'Export réussi',
+    message: source === 'google'
+      ? 'Le fichier Planify a été téléchargé pour importation dans Google Calendar.'
+      : 'Votre calendrier a été exporté au format iCal',
     actions: []
   });
+  return events.length;
 }
 
-// Sync with Google Calendar
+// Prepare a one-time import file until Google OAuth/API access is configured.
 function syncWithGoogleCalendar() {
-  alert('Synchronisation Google Calendar - Fonctionnalité à venir (nécessite OAuth)');
+  const count = exportToIcal({ source: 'google' });
+  const status = document.getElementById('calendar-sync-status');
+  const english = currentSettings.language === 'en';
+  status.textContent = count
+    ? (english
+      ? `Downloaded planify_calendar.ics with ${count} courses, events and pending assignments. In Google Calendar, open Settings → Import & export → Import and select the file. This is a one-time import; export again after changes. Automatic sync needs Google OAuth Calendar access, which is not configured yet.`
+      : `planify_calendar.ics a été téléchargé avec ${count} cours, événements et devoirs à venir. Dans Google Calendar : Paramètres → Importer et exporter → Importer, puis choisis le fichier. Cet import est ponctuel : refais-le après des modifications. La synchronisation automatique demande l’accès OAuth Google Calendar, qui n’est pas encore configuré.`)
+    : (english ? 'No events or courses are available to export.' : 'Aucun cours ni événement disponible à exporter.');
 }
 
 // Scheduling event listeners

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PLANIFY — Planning collaboratif</title>
   <!-- Liaison avec le fichier CSS -->
-  <link rel="stylesheet" href="style.css?v=20261006-3">
+  <link rel="stylesheet" href="style.css?v=20261006-4">
 </head>
 <body>
   <div class="app">
@@ -963,8 +963,9 @@
         <h3>Export du calendrier</h3>
         <div class="export-options">
           <button type="button" class="btn" id="btn-calendar-export-ical">📥 Exporter iCal</button>
-          <button type="button" class="btn" id="btn-sync-google">🔗 Synchroniser Google Calendar</button>
+          <button type="button" class="btn" id="btn-sync-google">📤 Préparer l’import Google Calendar</button>
         </div>
+        <p class="calendar-sync-status" id="calendar-sync-status" role="status" aria-live="polite"></p>
       </div>
       
       <div class="analytics-section">
@@ -991,6 +992,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <!-- Liaison avec le fichier JavaScript -->
-  <script src="script.js?v=20261006-3"></script>
+  <script src="script.js?v=20261006-4"></script>
 </body>
 </html>
