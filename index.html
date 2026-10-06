@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLANIFY — Planning collaboratif</title>
+  <!-- Liaison avec le fichier CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">🎓 <span>PLANIFY</span></div>
+      <nav class="nav">
+        <a class="active" href="#" data-page="home">⌂ &nbsp; Accueil</a>
+        <a href="#" data-page="planning">📅 &nbsp; Planning</a>
+        <a href="#" data-page="courses">📚 &nbsp; Cours</a>
+        <a href="#" data-page="groups">👥 &nbsp; Groupes</a>
+        <a href="#" data-page="notifications">🔔 &nbsp; Notifications</a>
+        <a href="#" data-page="settings">⚙️ &nbsp; Paramètres</a>
+      </nav>
+      <div class="bottom">Nicolas Obara<br><span>Étudiant · B2</span></div>
+    </aside>
+
+    <main class="main">
+      <div class="top">
+        <input type="text" class="search" id="search" placeholder="Rechercher un cours, une salle, un enseignant...">
+        <div class="user">
+          <button type="button" class="btn" id="auth-open-btn">Connexion</button>
+          <div class="notification-wrapper">
+            <button type="button" class="notification-btn" id="notification-btn" aria-label="Notifications" aria-expanded="false" aria-controls="notification-panel">
+              <span aria-hidden="true">🔔</span>
+              <span class="notification-badge" id="notification-badge">3</span>
+            </button>
+            <div class="notification-panel" id="notification-panel">
+              <div class="notification-header">
+                <h3>Notifications</h3>
+                <div class="notification-actions">
+                  <button type="button" class="notification-action-btn" id="mark-all-read">Tout marquer comme lu</button>
+                  <button type="button" class="notification-action-btn" id="clear-all-notifications">Effacer tout</button>
+                </div>
+              </div>
+              <div class="notification-filters">
+                <button type="button" class="filter-btn active" data-filter="all">Tous</button>
+                <button type="button" class="filter-btn" data-filter="courses">Cours</button>
+                <button type="button" class="filter-btn" data-filter="groups">Groupes</button>
+                <button type="button" class="filter-btn" data-filter="academic">Académique</button>
+                <button type="button" class="filter-btn" data-filter="system">Système</button>
+              </div>
+              <div class="notification-list" id="notification-list">
+                <!-- Notifications will be dynamically inserted here -->
+              </div>
+              <div class="notification-footer">
+                <button type="button" class="view-all-btn" id="view-all-notifications">Voir toutes les notifications</button>
+              </div>
+            </div>
+          </div>
+          <div class="avatar">NO</div>
+          <b id="auth-user-label">Local</b>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div><h1>Bonjour Nicolas 👋</h1><p>Voici le planning complet de ton groupe.</p></div>
+        <div class="date" id="date-display">28 sept. — 2 oct. 2026</div>
+      </section>
+
+      <div class="stats">
+        <div class="stat"><span class="muted">Cours cette semaine</span><b id="stat-count">22</b></div>
+        <div class="stat"><span class="muted">Heures de cours</span><b id="stat-hours">31 h</b></div>
+        <div class="stat"><span class="muted">Salles utilisées</span><b id="stat-rooms">8</b></div>
+        <div class="stat"><span class="muted">Prochain cours</span><b id="stat-next">08:00</b></div>
+      </div>
+
+      <div class="toolbar">
+        <button type="button" class="btn" id="btn-prev">←</button>
+        <button type="button" class="btn primary" id="btn-current">Cette semaine</button>
+        <button type="button" class="btn" id="btn-next">→</button>
+        <select class="select" id="group">
+          <option>B2 Génie généraliste</option>
+          <option>B2 Innovation</option>
+          <option>B3 Génie généraliste</option>
+        </select>
+        <button type="button" class="btn" id="btn-add">＋ Ajouter un cours</button>
+        <button type="button" class="btn" id="btn-add-event">＋ Événement</button>
+        <button type="button" class="btn" id="btn-calendar-views">📅 Vues</button>
+      </div>
+
+      <div class="legend">
+        <span><i class="dot blue"></i>Sciences</span>
+        <span><i class="dot purple"></i>Informatique</span>
+        <span><i class="dot green"></i>Langues</span>
+        <span><i class="dot orange"></i>Mécanique</span>
+      </div>
+
+      <section class="calendar">
+        <div class="grid">
+          <div class="cell head"></div>
+          <div class="cell head day" id="day-0">Lundi<small>28 sept.</small></div>
+          <div class="cell head day" id="day-1">Mardi<small>29 sept.</small></div>
+          <div class="cell head day" id="day-2">Mercredi<small>30 sept.</small></div>
+          <div class="cell head day" id="day-3">Jeudi<small>1 oct.</small></div>
+          <div class="cell head day" id="day-4">Vendredi<small>2 oct.</small></div>
+
+          <div class="cell time">08:00</div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <div class="cell time">10:15</div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <div class="cell time">14:00</div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <div class="cell time">16:15</div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="box">
+      <button type="button" class="close" id="btn-close">✕</button>
+      <h2 id="modalTitle">Ajouter un cours</h2>
+      <p class="muted">Prototype V1 — le formulaire sera relié à la base de données dans la version backend.</p>
+      <label>Matière<br><input type="text" class="search modal-input" placeholder="Ex. Python"></label><br><br>
+      <label>Jour et horaire<br><input type="text" class="search modal-input" placeholder="Lundi · 08:00–10:00"></label><br><br>
+      <label>Salle<br><input type="text" class="search modal-input" placeholder="B204"></label><br><br>
+      <button type="button" class="btn primary" id="btn-save">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settings-modal">
+    <div class="box settings-box">
+      <button type="button" class="close" id="btn-settings-close" aria-label="Fermer">✕</button>
+      <h2>Paramètres</h2>
+
+      <div class="settings-tabs">
+        <button type="button" class="settings-tab active" data-tab="profile">Profil</button>
+        <button type="button" class="settings-tab" data-tab="display">Affichage</button>
+        <button type="button" class="settings-tab" data-tab="calendar">Calendrier</button>
+        <button type="button" class="settings-tab" data-tab="notifications">Notifications</button>
+        <button type="button" class="settings-tab" data-tab="data">Données</button>
+        <button type="button" class="settings-tab" data-tab="app">Application</button>
+      </div>
+
+      <div class="settings-content">
+        <!-- User Profile Section -->
+        <div class="settings-panel active" id="panel-profile">
+          <h3>Profil utilisateur</h3>
+          <div class="settings-field">
+            <label>Nom complet</label>
+            <input type="text" id="setting-name" class="input" value="Nicolas Obara">
+          </div>
+          <div class="settings-field">
+            <label>Niveau d'études</label>
+            <select id="setting-level" class="input">
+              <option value="B1">B1</option>
+              <option value="B2" selected>B2</option>
+              <option value="B3">B3</option>
+              <option value="M1">M1</option>
+              <option value="M2">M2</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Groupe par défaut</label>
+            <select id="setting-group" class="input">
+              <option value="B2 Génie généraliste" selected>B2 Génie généraliste</option>
+              <option value="B2 Innovation">B2 Innovation</option>
+              <option value="B3 Génie généraliste">B3 Génie généraliste</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Display Preferences Section -->
+        <div class="settings-panel" id="panel-display">
+          <h3>Préférences d'affichage</h3>
+          <div class="settings-field">
+            <label>Thème</label>
+            <div class="toggle-group">
+              <label class="toggle-label">
+                <input type="radio" name="theme" value="light" checked>
+                <span>Clair</span>
+              </label>
+              <label class="toggle-label">
+                <input type="radio" name="theme" value="dark">
+                <span>Sombre</span>
+              </label>
+            </div>
+          </div>
+          <div class="settings-field">
+            <label>Langue</label>
+            <select id="setting-language" class="input">
+              <option value="fr" selected>Français</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Format de date</label>
+            <select id="setting-dateformat" class="input">
+              <option value="DD/MM/YYYY" selected>JJ/MM/AAAA</option>
+              <option value="MM/DD/YYYY">MM/JJ/AAAA</option>
+              <option value="YYYY-MM-DD">AAAA-MM-JJ</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Format de l'heure</label>
+            <div class="toggle-group">
+              <label class="toggle-label">
+                <input type="radio" name="timeformat" value="24h" checked>
+                <span>24h</span>
+              </label>
+              <label class="toggle-label">
+                <input type="radio" name="timeformat" value="12h">
+                <span>12h</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Settings Section -->
+        <div class="settings-panel" id="panel-calendar">
+          <h3>Paramètres du calendrier</h3>
+          <div class="settings-field">
+            <label>Premier jour de la semaine</label>
+            <div class="toggle-group">
+              <label class="toggle-label">
+                <input type="radio" name="weekstart" value="monday" checked>
+                <span>Lundi</span>
+              </label>
+              <label class="toggle-label">
+                <input type="radio" name="weekstart" value="sunday">
+                <span>Dimanche</span>
+              </label>
+            </div>
+          </div>
+          <div class="settings-field">
+            <label>Afficher les week-ends</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-showweekends" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-field">
+            <label>Créneaux par défaut</label>
+            <select id="setting-timeslots" class="input">
+              <option value="standard" selected>Standard (4 créneaux)</option>
+              <option value="extended">Étendu (6 créneaux)</option>
+              <option value="compact">Compact (3 créneaux)</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Schéma de couleurs</label>
+            <select id="setting-colorscheme" class="input">
+              <option value="default" selected>Défaut</option>
+              <option value="pastel">Pastel</option>
+              <option value="vibrant">Vibrant</option>
+              <option value="monochrome">Monochrome</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Notification Settings Section -->
+        <div class="settings-panel" id="panel-notifications">
+          <h3>Paramètres de notification</h3>
+          <div class="settings-field">
+            <label>Rappels de cours</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-coursereminders" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-field">
+            <label>Temps avant le rappel</label>
+            <select id="setting-remindertime" class="input">
+              <option value="5">5 minutes</option>
+              <option value="15" selected>15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="60">1 heure</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Notifications de changements d'horaire</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-schedulechanges" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-field">
+            <label>Notifications de groupe</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-groupnotifications" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Data & Privacy Section -->
+        <div class="settings-panel" id="panel-data">
+          <h3>Données et confidentialité</h3>
+          <div class="settings-field">
+            <label>Exporter l'emploi du temps</label>
+            <div class="button-group">
+              <button type="button" class="btn" id="btn-export-pdf">Exporter en PDF</button>
+              <button type="button" class="btn" id="btn-settings-export-ical">iCal</button>
+            </div>
+          </div>
+          <div class="settings-field">
+            <label>Confidentialité par défaut des nouveaux groupes</label>
+            <select id="setting-groupsharing" class="input">
+              <option value="public">Public</option>
+              <option value="private" selected>Privé</option>
+              <option value="restricted">Restreint</option>
+            </select>
+            <small>Ce choix s'applique aux nouveaux groupes créés sur cet appareil. Le partage entre comptes n'est pas encore activé.</small>
+          </div>
+          <div class="settings-field danger-zone">
+            <label>Effacer les données locales</label>
+            <button type="button" class="btn danger" id="btn-clear-data">Effacer toutes les données</button>
+          </div>
+        </div>
+
+        <!-- App Settings Section -->
+        <div class="settings-panel" id="panel-app">
+          <h3>Paramètres de l'application</h3>
+          <div class="settings-field">
+            <label>Groupe par défaut au démarrage</label>
+            <select id="setting-startupgroup" class="input">
+              <option value="last" selected>Dernier utilisé</option>
+              <option value="B2 Génie généraliste">B2 Génie généraliste</option>
+              <option value="B2 Innovation">B2 Innovation</option>
+              <option value="B3 Génie généraliste">B3 Génie généraliste</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Actualisation automatique</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-autorefresh" checked>
+              <span class="slider"></span>
+            </label>
+            <small>Actualise les données locales entre les onglets ouverts sur cet appareil.</small>
+          </div>
+          <div class="settings-field">
+            <label>Effets sonores</label>
+            <label class="switch">
+              <input type="checkbox" id="setting-sounds">
+              <span class="slider"></span>
+            </label>
+            <button type="button" class="btn" id="btn-test-sound">Tester le son</button>
+            <small>Autorise le son après un clic dans cette page. Vérifie que le volume de l'appareil est activé.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button type="button" class="btn" id="btn-settings-cancel">Annuler</button>
+        <button type="button" class="btn primary" id="btn-settings-save">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Groups Modal -->
+  <div class="modal" id="groups-modal">
+    <div class="box groups-box">
+      <button type="button" class="close" id="btn-groups-close" aria-label="Fermer">✕</button>
+      <h2>Groupes</h2>
+
+      <div class="groups-tabs">
+        <button type="button" class="groups-tab active" data-tab="my-groups">Mes Groupes</button>
+        <button type="button" class="groups-tab" data-tab="browse">Parcourir</button>
+        <button type="button" class="groups-tab" data-tab="create">Créer</button>
+      </div>
+
+      <div class="groups-content">
+        <div id="group-cloud-status" class="cloud-status" role="status">Mode local : les groupes affichés sur cet appareil ne sont pas partagés.</div>
+        <div id="group-invitations-list" class="group-invitations-list" hidden></div>
+        <!-- My Groups Section -->
+        <div class="groups-panel active" id="panel-my-groups">
+          <div class="groups-header">
+            <h3>Mes Groupes</h3>
+            <button type="button" class="btn primary" id="btn-create-group">＋ Créer un groupe</button>
+          </div>
+          <div class="groups-list" id="my-groups-list">
+            <!-- Groups will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Browse Groups Section -->
+        <div class="groups-panel" id="panel-browse">
+          <div class="groups-header">
+            <h3>Parcourir les groupes</h3>
+            <div class="search-group">
+              <input type="text" class="input" id="group-search" placeholder="Rechercher des groupes...">
+            </div>
+          </div>
+          <div class="groups-filters">
+            <button type="button" class="filter-group-btn active" data-filter="all">Tous</button>
+            <button type="button" class="filter-group-btn" data-filter="academic">Académique</button>
+            <button type="button" class="filter-group-btn" data-filter="study">Étude</button>
+            <button type="button" class="filter-group-btn" data-filter="project">Projet</button>
+            <button type="button" class="filter-group-btn" data-filter="social">Social</button>
+          </div>
+          <div class="groups-list" id="browse-groups-list">
+            <!-- Browse groups will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Create Group Section -->
+        <div class="groups-panel" id="panel-create">
+          <h3>Créer un nouveau groupe</h3>
+          <form id="create-group-form">
+            <div class="settings-field">
+              <label>Nom du groupe *</label>
+              <input type="text" class="input" id="group-name" placeholder="Ex. Groupe d'étude Physique" required>
+            </div>
+            <div class="settings-field">
+              <label>Description</label>
+              <textarea class="input" id="group-description" rows="3" placeholder="Décrivez le but de ce groupe..."></textarea>
+            </div>
+            <div class="settings-field">
+              <label>Type de groupe *</label>
+              <select class="input" id="group-type" required>
+                <option value="academic">Académique</option>
+                <option value="study">Étude</option>
+                <option value="project">Projet</option>
+                <option value="social">Social</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label>Confidentialité *</label>
+              <div class="toggle-group">
+                <label class="toggle-label">
+                  <input type="radio" name="group-privacy" value="public">
+                  <span>Public</span>
+                </label>
+                <label class="toggle-label">
+                  <input type="radio" name="group-privacy" value="private" checked>
+                  <span>Privé</span>
+                </label>
+                <label class="toggle-label">
+                  <input type="radio" name="group-privacy" value="invite-only">
+                  <span>Sur invitation</span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label>Couleur du groupe</label>
+              <div class="color-picker">
+                <button type="button" class="color-option" data-color="blue" aria-label="Bleu">Bleu</button>
+                <button type="button" class="color-option" data-color="purple" aria-label="Violet">Violet</button>
+                <button type="button" class="color-option" data-color="green" aria-label="Vert">Vert</button>
+                <button type="button" class="color-option" data-color="orange" aria-label="Orange">Orange</button>
+                <button type="button" class="color-option" data-color="pink" aria-label="Rose">Rose</button>
+                <button type="button" class="color-option" data-color="cyan" aria-label="Cyan">Cyan</button>
+              </div>
+              <input type="hidden" id="group-color" value="blue">
+            </div>
+            <div class="groups-actions">
+              <button type="button" class="btn" id="btn-cancel-create">Annuler</button>
+              <button type="submit" class="btn primary">Créer le groupe</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="auth-modal" aria-labelledby="auth-modal-title" aria-modal="true" role="dialog">
+    <div class="box auth-box">
+      <button type="button" class="close" id="auth-close-btn" aria-label="Fermer">✕</button>
+      <h2 id="auth-modal-title">Connexion à Planify</h2>
+      <p class="muted">Connecte-toi pour retrouver tes groupes partagés sur tous tes appareils.</p>
+      <form id="auth-form">
+        <label for="auth-email">Adresse e-mail</label>
+        <input class="input" id="auth-email" type="email" autocomplete="email" required>
+        <label for="auth-password">Mot de passe</label>
+        <input class="input" id="auth-password" type="password" autocomplete="current-password" minlength="8" required>
+        <div class="auth-actions">
+          <button type="submit" class="btn primary" id="auth-submit-btn">Se connecter</button>
+          <button type="button" class="btn" id="auth-signup-btn">Créer un compte</button>
+        </div>
+      </form>
+      <button type="button" class="btn auth-google-btn" id="auth-google-btn">Continuer avec Google</button>
+      <button type="button" class="btn" id="auth-signout-btn" hidden>Se déconnecter</button>
+      <p class="auth-message" id="auth-message" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- Group Details Modal -->
+  <div class="modal" id="group-details-modal">
+    <div class="box group-details-box">
+      <button type="button" class="close" id="btn-group-details-close" aria-label="Fermer">✕</button>
+      <div class="group-details-header">
+        <div class="group-icon" id="detail-group-icon">📚</div>
+        <div class="group-info">
+          <h2 id="detail-group-name">Nom du groupe</h2>
+          <p id="detail-group-description">Description du groupe</p>
+          <div class="group-meta">
+            <span id="detail-group-type">Académique</span>
+            <span id="detail-group-members">12 membres</span>
+            <span id="detail-group-privacy">Public</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-details-tabs">
+        <button type="button" class="group-details-tab active" data-tab="members">Membres</button>
+        <button type="button" class="group-details-tab" data-tab="schedule">Calendrier</button>
+        <button type="button" class="group-details-tab" data-tab="files">Fichiers</button>
+        <button type="button" class="group-details-tab" data-tab="settings">Paramètres</button>
+      </div>
+
+      <div class="group-details-content">
+        <!-- Members Tab -->
+        <div class="group-details-panel active" id="group-detail-panel-members">
+          <div class="members-header">
+            <h3>Membres</h3>
+            <button type="button" class="btn" id="btn-invite-member">Inviter des membres</button>
+          </div>
+          <div class="members-list" id="group-members-list">
+            <!-- Members will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Schedule Tab -->
+        <div class="group-details-panel" id="group-detail-panel-schedule">
+          <div class="schedule-header">
+            <h3>Calendrier du groupe</h3>
+            <button type="button" class="btn primary" id="btn-add-group-event">＋ Ajouter un événement</button>
+          </div>
+          <div class="group-calendar" id="group-calendar">
+            <p class="muted">Aucun événement de groupe programmé</p>
+          </div>
+        </div>
+
+        <!-- Files Tab -->
+        <div class="group-details-panel" id="group-detail-panel-files">
+          <div class="files-header">
+            <h3>Fichiers partagés</h3>
+            <button type="button" class="btn primary" id="btn-upload-file"> Téléverser un fichier</button>
+          </div>
+          <div class="files-list" id="group-files-list">
+            <p class="muted">Aucun fichier partagé</p>
+          </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="group-details-panel" id="group-detail-panel-settings">
+          <h3>Paramètres du groupe</h3>
+          <div class="settings-field">
+            <label>Modifier le nom</label>
+            <input type="text" class="input" id="edit-group-name" value="">
+          </div>
+          <div class="settings-field">
+            <label>Modifier la description</label>
+            <textarea class="input" id="edit-group-description" rows="3"></textarea>
+          </div>
+          <div class="settings-field">
+            <label>Confidentialité</label>
+            <select class="input" id="edit-group-privacy">
+              <option value="public">Public</option>
+              <option value="private">Privé</option>
+              <option value="invite-only">Sur invitation</option>
+            </select>
+          </div>
+          <div class="settings-field danger-zone">
+            <label>Actions dangereuses</label>
+            <button type="button" class="btn danger" id="btn-leave-group">Quitter le groupe</button>
+            <button type="button" class="btn danger" id="btn-delete-group">Supprimer le groupe</button>
+          </div>
+          <div class="groups-actions">
+            <button type="button" class="btn" id="btn-cancel-settings">Annuler</button>
+            <button type="button" class="btn primary" id="btn-save-settings">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Courses Modal -->
+  <div class="modal" id="courses-modal">
+    <div class="box courses-box">
+      <button type="button" class="close" id="btn-courses-close" aria-label="Fermer">✕</button>
+      <h2>Cours</h2>
+
+      <div class="courses-stats">
+        <div class="course-stat">
+          <span class="stat-number" id="total-courses">8</span>
+          <span class="stat-label">Cours inscrits</span>
+        </div>
+        <div class="course-stat">
+          <span class="stat-number" id="total-credits">24</span>
+          <span class="stat-label">Crédits</span>
+        </div>
+        <div class="course-stat">
+          <span class="stat-number" id="current-gpa">3.2</span>
+          <span class="stat-label">Moyenne</span>
+        </div>
+      </div>
+
+      <div class="courses-tabs">
+        <button type="button" class="courses-tab active" data-tab="my-courses">Mes Cours</button>
+        <button type="button" class="courses-tab" data-tab="browse">Parcourir</button>
+        <button type="button" class="courses-tab" data-tab="register">Inscription</button>
+      </div>
+
+      <div class="courses-content">
+        <!-- My Courses Section -->
+        <div class="courses-panel active" id="panel-my-courses">
+          <div class="courses-header">
+            <h3>Mes Cours</h3>
+            <div class="search-course">
+              <input type="text" class="input" id="course-search" placeholder="Rechercher mes cours...">
+            </div>
+          </div>
+          <div class="courses-filters">
+            <button type="button" class="filter-course-btn active" data-filter="all">Tous</button>
+            <button type="button" class="filter-course-btn" data-filter="sciences">Sciences</button>
+            <button type="button" class="filter-course-btn" data-filter="math">Mathématiques</button>
+            <button type="button" class="filter-course-btn" data-filter="languages">Langues</button>
+            <button type="button" class="filter-course-btn" data-filter="engineering">Génie</button>
+          </div>
+          <div class="courses-list" id="my-courses-list">
+            <!-- Courses will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Browse Courses Section -->
+        <div class="courses-panel" id="panel-browse-courses">
+          <div class="courses-header">
+            <h3>Parcourir les cours</h3>
+            <div class="search-course">
+              <input type="text" class="input" id="browse-course-search" placeholder="Rechercher des cours...">
+            </div>
+          </div>
+          <div class="courses-filters">
+            <button type="button" class="filter-course-btn active" data-filter="all">Tous</button>
+            <button type="button" class="filter-course-btn" data-filter="sciences">Sciences</button>
+            <button type="button" class="filter-course-btn" data-filter="math">Mathématiques</button>
+            <button type="button" class="filter-course-btn" data-filter="languages">Langues</button>
+            <button type="button" class="filter-course-btn" data-filter="engineering">Génie</button>
+          </div>
+          <div class="courses-list" id="browse-courses-list">
+            <!-- Browse courses will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Registration Section -->
+        <div class="courses-panel" id="panel-register">
+          <h3>Inscription aux cours</h3>
+          <div class="registration-info">
+            <p class="muted">Période d'inscription: 1-15 Septembre 2026</p>
+            <p class="muted">Limite de crédits: 30 crédits par semestre</p>
+          </div>
+          <div class="available-courses" id="available-courses-list">
+            <!-- Available courses will be dynamically inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Details Modal -->
+  <div class="modal" id="course-details-modal">
+    <div class="box course-details-box">
+      <button type="button" class="close" id="btn-course-details-close" aria-label="Fermer">✕</button>
+      <div class="course-details-header">
+        <div class="course-icon" id="detail-course-icon">📚</div>
+        <div class="course-info">
+          <h2 id="detail-course-name">Nom du cours</h2>
+          <p id="detail-course-code">Code: PHY101</p>
+          <div class="course-meta">
+            <span id="detail-course-instructor">Prof. M. Dupont</span>
+            <span id="detail-course-credits">3 crédits</span>
+            <span id="detail-course-category">Sciences</span>
+          </div>
+        </div>
+        <div class="course-grade">
+          <span class="grade-label">Note actuelle</span>
+          <span class="grade-value" id="detail-course-grade">B+</span>
+        </div>
+      </div>
+
+      <div class="course-details-tabs">
+        <button type="button" class="course-details-tab active" data-tab="overview">Vue d'ensemble</button>
+        <button type="button" class="course-details-tab" data-tab="schedule">Emploi du temps</button>
+        <button type="button" class="course-details-tab" data-tab="materials">Matériaux</button>
+        <button type="button" class="course-details-tab" data-tab="grades">Notes</button>
+        <button type="button" class="course-details-tab" data-tab="assignments">Devoirs</button>
+      </div>
+
+      <div class="course-details-content">
+        <!-- Overview Tab -->
+        <div class="course-details-panel active" id="detail-panel-overview">
+          <h3>Description du cours</h3>
+          <p id="detail-course-description" class="course-description">Description du cours...</p>
+          
+          <div class="course-info-grid">
+            <div class="info-item">
+              <span class="info-label">Salle</span>
+              <span class="info-value" id="detail-course-room">B204</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Horaires</span>
+              <span class="info-value" id="detail-course-time">Lundi 08:00-10:00</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Prérequis</span>
+              <span class="info-value" id="detail-course-prerequisites">Aucun</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Semestre</span>
+              <span class="info-value" id="detail-course-semester">Automne 2026</span>
+            </div>
+          </div>
+
+          <div class="course-actions">
+            <button type="button" class="btn primary" id="btn-edit-course">Modifier ce cours</button>
+            <button type="button" class="btn" id="btn-contact-professor">Contacter le professeur</button>
+            <button type="button" class="btn danger" id="btn-drop-course">Abandonner le cours</button>
+          </div>
+
+          <form id="course-edit-form" class="course-edit-form" hidden>
+            <h3>Modifier le cours</h3>
+            <div class="course-edit-grid">
+              <label>Nom du cours
+                <input type="text" id="edit-course-name" class="input" required maxlength="100">
+              </label>
+              <label>Code du cours
+                <input type="text" id="edit-course-code" class="input" required maxlength="20">
+              </label>
+              <label>Enseignant
+                <input type="text" id="edit-course-instructor" class="input" required maxlength="100">
+              </label>
+              <label>Salle
+                <input type="text" id="edit-course-room" class="input" required maxlength="40">
+              </label>
+              <label class="course-edit-schedule">Horaires (un par ligne, ex. Lundi 08:00-10:00)
+                <textarea id="edit-course-schedule" class="input" rows="3" required></textarea>
+              </label>
+            </div>
+            <p class="course-edit-error" id="course-edit-error" role="alert" hidden></p>
+            <div class="course-edit-actions">
+              <button type="button" class="btn" id="btn-cancel-course-edit">Annuler</button>
+              <button type="submit" class="btn primary">Enregistrer les modifications</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Schedule Tab -->
+        <div class="course-details-panel" id="detail-panel-schedule">
+          <h3>Emploi du temps du cours</h3>
+          <div class="course-schedule" id="course-schedule-list">
+            <!-- Schedule will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Materials Tab -->
+        <div class="course-details-panel" id="detail-panel-materials">
+          <div class="materials-header">
+            <h3>Matériaux de cours</h3>
+            <button type="button" class="btn primary" id="btn-upload-material"> Téléverser</button>
+          </div>
+          <div class="materials-list" id="course-materials-list">
+            <!-- Materials will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Grades Tab -->
+        <div class="course-details-panel" id="detail-panel-grades">
+          <h3>Notes et performances</h3>
+          <div class="grade-summary">
+            <div class="grade-item">
+              <span class="grade-item-label">Note finale</span>
+              <span class="grade-item-value" id="detail-final-grade">B+</span>
+            </div>
+            <div class="grade-item">
+              <span class="grade-item-label">Pourcentage</span>
+              <span class="grade-item-value" id="detail-grade-percentage">82%</span>
+            </div>
+            <div class="grade-item">
+              <span class="grade-item-label">Rang</span>
+              <span class="grade-item-value" id="detail-grade-rank">15/30</span>
+            </div>
+          </div>
+          <div class="grade-breakdown" id="grade-breakdown-list">
+            <!-- Grade breakdown will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <!-- Assignments Tab -->
+        <div class="course-details-panel" id="detail-panel-assignments">
+          <div class="assignments-header">
+            <h3>Devoirs et examens</h3>
+            <button type="button" class="btn primary" id="btn-add-assignment">＋ Ajouter</button>
+          </div>
+          <div class="assignments-list" id="course-assignments-list">
+            <!-- Assignments will be dynamically inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Creation Modal -->
+  <div class="modal" id="event-modal">
+    <div class="box event-box">
+      <button type="button" class="close" id="btn-event-close" aria-label="Fermer">✕</button>
+      <h2>Ajouter un événement</h2>
+      
+      <form id="event-form">
+        <div class="settings-field">
+          <label>Type d'événement *</label>
+          <select class="input" id="event-type" required>
+            <option value="study">Session d'étude</option>
+            <option value="personal">Personnel</option>
+            <option value="exam">Examen</option>
+            <option value="deadline">Date limite</option>
+            <option value="meeting">Réunion</option>
+            <option value="other">Autre</option>
+          </select>
+        </div>
+        
+        <div class="settings-field">
+          <label>Titre *</label>
+          <input type="text" class="input" id="event-title" placeholder="Ex. Révision Physique" required>
+        </div>
+        
+        <div class="settings-field">
+          <label>Description</label>
+          <textarea class="input" id="event-description" rows="2" placeholder="Détails de l'événement..."></textarea>
+        </div>
+        
+        <div class="field-row">
+          <div class="settings-field">
+            <label>Date *</label>
+            <input type="date" class="input" id="event-date" required>
+          </div>
+          <div class="settings-field">
+            <label>Heure de début *</label>
+            <input type="time" class="input" id="event-start" required>
+          </div>
+        </div>
+        
+        <div class="settings-field">
+          <label>Heure de fin</label>
+          <input type="time" class="input" id="event-end">
+        </div>
+        
+        <div class="settings-field">
+          <label>Lieu</label>
+          <input type="text" class="input" id="event-location" placeholder="Ex. Bibliothèque, B204">
+        </div>
+        
+        <div class="settings-field">
+          <label>Rappel</label>
+          <select class="input" id="event-reminder">
+            <option value="none">Aucun rappel</option>
+            <option value="5">5 minutes avant</option>
+            <option value="15">15 minutes avant</option>
+            <option value="30">30 minutes avant</option>
+            <option value="60">1 heure avant</option>
+            <option value="1440">1 jour avant</option>
+          </select>
+        </div>
+        
+        <div class="settings-field">
+          <label>Récurrence</label>
+          <select class="input" id="event-recurrence">
+            <option value="none">Ne pas répéter</option>
+            <option value="daily">Tous les jours</option>
+            <option value="weekly">Toutes les semaines</option>
+            <option value="biweekly">Toutes les 2 semaines</option>
+            <option value="monthly">Tous les mois</option>
+          </select>
+        </div>
+        
+        <div class="settings-field">
+          <label>Couleur</label>
+          <div class="color-picker">
+            <button type="button" class="color-option event-color" data-color="blue" aria-label="Bleu">Bleu</button>
+            <button type="button" class="color-option event-color" data-color="purple" aria-label="Violet">Violet</button>
+            <button type="button" class="color-option event-color" data-color="green" aria-label="Vert">Vert</button>
+            <button type="button" class="color-option event-color" data-color="orange" aria-label="Orange">Orange</button>
+            <button type="button" class="color-option event-color" data-color="pink" aria-label="Rose">Rose</button>
+            <button type="button" class="color-option event-color" data-color="cyan" aria-label="Cyan">Cyan</button>
+          </div>
+          <input type="hidden" id="event-color" value="blue">
+        </div>
+        
+        <div class="event-actions">
+          <button type="button" class="btn" id="btn-cancel-event">Annuler</button>
+          <button type="submit" class="btn primary">Créer l'événement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Calendar Views Modal -->
+  <div class="modal" id="calendar-views-modal">
+    <div class="box calendar-views-box">
+      <button type="button" class="close" id="btn-calendar-views-close" aria-label="Fermer">✕</button>
+      <h2>Options de calendrier</h2>
+      
+      <div class="views-section">
+        <h3>Vue du calendrier</h3>
+        <div class="view-options">
+          <button type="button" class="view-btn active" data-view="weekly">📅 Hebdomadaire</button>
+          <button type="button" class="view-btn" data-view="daily">📋 Quotidien</button>
+          <button type="button" class="view-btn" data-view="monthly">📆 Mensuel</button>
+        </div>
+      </div>
+      
+      <div class="templates-section">
+        <h3>Modèles d'événements</h3>
+        <div class="templates-grid">
+          <button type="button" class="template-btn" data-template="study-session">
+            <span class="template-icon">📚</span>
+            <span class="template-name">Session d'étude</span>
+          </button>
+          <button type="button" class="template-btn" data-template="exam-prep">
+            <span class="template-icon">📝</span>
+            <span class="template-name">Préparation examen</span>
+          </button>
+          <button type="button" class="template-btn" data-template="homework">
+            <span class="template-icon">✏️</span>
+            <span class="template-name">Devoirs</span>
+          </button>
+          <button type="button" class="template-btn" data-template="group-meeting">
+            <span class="template-icon">👥</span>
+            <span class="template-name">Réunion de groupe</span>
+          </button>
+          <button type="button" class="template-btn" data-template="gym">
+            <span class="template-icon">🏃</span>
+            <span class="template-name">Sport</span>
+          </button>
+          <button type="button" class="template-btn" data-template="appointment">
+            <span class="template-icon">🏥</span>
+            <span class="template-name">Rendez-vous</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="export-section">
+        <h3>Export du calendrier</h3>
+        <div class="export-options">
+          <button type="button" class="btn" id="btn-calendar-export-ical">📥 Exporter iCal</button>
+          <button type="button" class="btn" id="btn-sync-google">🔗 Synchroniser Google Calendar</button>
+        </div>
+      </div>
+      
+      <div class="analytics-section">
+        <h3>Analyse du temps</h3>
+        <div class="time-analytics">
+          <div class="analytics-item">
+            <span class="analytics-label">Temps d'étude cette semaine</span>
+            <span class="analytics-value" id="study-time">12h</span>
+          </div>
+          <div class="analytics-item">
+            <span class="analytics-label">Événements personnels</span>
+            <span class="analytics-value" id="personal-events">3</span>
+          </div>
+          <div class="analytics-item">
+            <span class="analytics-label">Conflits détectés</span>
+            <span class="analytics-value" id="conflicts-count">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Supabase (clé publishable uniquement) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <!-- Liaison avec le fichier JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
