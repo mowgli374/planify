@@ -420,8 +420,12 @@ function renderWeek(weekIndex) {
   // Add personal events for this week
   addPersonalEventsToCalendar(week);
   
-  // Update current week button
-  btnCurrent.textContent = weekIndex === 0 ? 'Cette semaine ✓' : 'Cette semaine';
+  // Keep the current-week shortcut anchored to the real current week.
+  updateCalendarNavigationControls();
+  const today = new Date();
+  const todayMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7));
+  const weekIsCurrent = monday.toDateString() === todayMonday.toDateString();
+  if (weekIsCurrent) btnCurrent.textContent = currentSettings.language === 'en' ? 'This week ✓' : 'Cette semaine ✓';
   
   // Update stats
   updateStats(week.courses);
