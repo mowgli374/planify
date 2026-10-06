@@ -219,7 +219,12 @@ const calendarSlotConfigs = {
   ]
 };
 let timeSlots = calendarSlotConfigs.standard;
-let currentWeekIndex = 0;
+const initialToday = new Date();
+let currentWeekIndex = Math.max(0, weeks.findIndex(week => {
+  const start = getWeekMonday(week);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return initialToday >= start && initialToday <= end;
+}));
 let calendarReady = false;
 let calendarDayOrder = [0, 1, 2, 3, 4]; // Monday-based weekday indexes; 6 represents Sunday.
 
@@ -315,6 +320,7 @@ function slotIndexForTime(value) {
 
 function buildCalendarGrid() {
   grid.replaceChildren();
+  grid.classList.remove('calendar-grid-monthly', 'calendar-grid-annual');
   calendarDayOrder = getVisibleCalendarDays();
   grid.style.gridTemplateColumns = `72px repeat(${calendarDayOrder.length}, minmax(110px, 1fr))`;
   grid.style.minWidth = `${72 + calendarDayOrder.length * 130}px`;
@@ -456,27 +462,32 @@ function addPersonalEventsToCalendar(week) {
 }
 
 // Navigation semaine
-btnPrev.addEventListener('click', () => {
-  if (currentWeekIndex > 0) {
-    currentWeekIndex--;
-    resetSearch();
-    renderWeek(currentWeekIndex);
-  }
-});
-
-btnNext.addEventListener('click', () => {
-  if (currentWeekIndex < weeks.length - 1) {
-    currentWeekIndex++;
-    resetSearch();
-    renderWeek(currentWeekIndex);
-  }
-});
-
+btnPrev.addEventListener('click', () => navigateCalendar(-1));
+btnNext.addEventListener('click', () => navigateCalendar(1));
 btnCurrent.addEventListener('click', () => {
-  currentWeekIndex = 0;
+  calendarViewDate = new Date();
+  const monday = new Date(calendarViewDate);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const matchingWeek = weeks.findIndex(week => getWeekMonday(week).toDateString() === monday.toDateString());
+  if (matchingWeek !== -1) currentWeekIndex = matchingWeek;
   resetSearch();
-  renderWeek(currentWeekIndex);
+  renderSelectedCalendarView();
 });
+
+function navigateCalendar(direction) {
+  if (currentCalendarView === 'weekly') {
+    currentWeekIndex = Math.max(0, Math.min(weeks.length - 1, currentWeekIndex + direction));
+    calendarViewDate = new Date(getWeekMonday(weeks[currentWeekIndex]));
+  } else if (currentCalendarView === 'daily') {
+    calendarViewDate.setDate(calendarViewDate.getDate() + direction);
+  } else if (currentCalendarView === 'monthly') {
+    calendarViewDate.setMonth(calendarViewDate.getMonth() + direction, 1);
+  } else {
+    calendarViewDate.setFullYear(calendarViewDate.getFullYear() + direction);
+  }
+  resetSearch();
+  renderSelectedCalendarView();
+}
 
 // Recherche dynamique dans le planning
 searchInput.addEventListener('input', (e) => {
@@ -2125,6 +2136,15 @@ function initializePlanifyAuth() {
     authMessage.textContent = '';
     authModal.classList.add('show');
   });
+  // OAuth providers return errors in the URL fragment/query string. Surface
+  // those errors in the login dialog instead of leaving the user on a blank page.
+  const authParams = new URLSearchParams(`${window.location.search.slice(1)}&${window.location.hash.slice(1)}`);
+  const oauthError = authParams.get('error_description') || authParams.get('error');
+  if (oauthError) {
+    authMessage.textContent = `Connexion Google impossible : ${oauthError.replace(/\+/g, ' ')}`;
+    authModal.classList.add('show');
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash.split('&')[0]);
+  }
   authCloseBtn.addEventListener('click', () => authModal.classList.remove('show'));
   authModal.addEventListener('click', event => {
     if (event.target === authModal) authModal.classList.remove('show');
@@ -2162,12 +2182,19 @@ function initializePlanifyAuth() {
       : (data.session ? 'Compte créé et connecté.' : 'Compte créé. Vérifie ta boîte e-mail pour confirmer l’adresse.');
   });
   authGoogleBtn.addEventListener('click', async () => {
-    authMessage.textContent = 'Ouverture de Google…';
-    const { error } = await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.href }
-    });
-    if (error) authMessage.textContent = error.message;
+    authGoogleBtn.disabled = true;
+    authMessage.textContent = 'Connexion à Google…';
+    try {
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}${window.location.pathname}` }
+      });
+      if (error) authMessage.textContent = `Connexion Google impossible : ${error.message}`;
+    } catch (error) {
+      authMessage.textContent = `Connexion Google impossible : ${error.message || 'Erreur inattendue.'}`;
+    } finally {
+      authGoogleBtn.disabled = false;
+    }
   });
   authSignoutBtn.addEventListener('click', async () => {
     const { error } = await client.auth.signOut();
@@ -3222,6 +3249,7 @@ function savePersonalEvents() {
 }
 
 let currentCalendarView = 'weekly';
+let calendarViewDate = new Date(getWeekMonday(weeks[currentWeekIndex]));
 
 // Open event modal
 function openEventModal() {
@@ -3389,33 +3417,227 @@ function updateAnalytics() {
 
 // Switch calendar view
 function switchCalendarView(view) {
+  if (!['daily', 'weekly', 'monthly', 'annual'].includes(view)) view = 'weekly';
+  calendarViewDate = new Date(getWeekMonday(weeks[currentWeekIndex]));
+  if (view === 'daily') {
+    const today = new Date();
+    const selectedEnd = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), calendarViewDate.getDate() + 6);
+    if (today >= calendarViewDate && today <= selectedEnd) calendarViewDate = today;
+  }
   currentCalendarView = view;
   viewBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
-  
-  // Update calendar display based on view
-  if (view === 'daily') {
-    renderDailyView();
-  } else if (view === 'monthly') {
-    renderMonthlyView();
-  } else {
-    renderWeeklyView(); // Default weekly view
-  }
+  updateCalendarNavigationControls();
+  renderSelectedCalendarView();
+  closeCalendarViewsModal();
 }
 
-// Render daily view
+function updateCalendarNavigationControls() {
+  const english = currentSettings.language === 'en';
+  const labels = {
+    daily: english ? ['Previous day', 'Today', 'Next day'] : ['Jour précédent', 'Aujourd’hui', 'Jour suivant'],
+    monthly: english ? ['Previous month', 'This month', 'Next month'] : ['Mois précédent', 'Ce mois', 'Mois suivant'],
+    annual: english ? ['Previous year', 'This year', 'Next year'] : ['Année précédente', 'Cette année', 'Année suivante'],
+    weekly: english ? ['Previous week', 'This week', 'Next week'] : ['Semaine précédente', 'Cette semaine', 'Semaine suivante']
+  }[currentCalendarView];
+  btnPrev.setAttribute('aria-label', labels[0]);
+  btnCurrent.textContent = labels[1];
+  btnNext.setAttribute('aria-label', labels[2]);
+}
+
+function renderSelectedCalendarView() {
+  if (currentCalendarView === 'daily') renderDailyView();
+  else if (currentCalendarView === 'monthly') renderMonthlyView();
+  else if (currentCalendarView === 'annual') renderAnnualView();
+  else renderWeeklyView();
+}
+
+function getScheduleItemsForDate(date) {
+  const iso = formatLocalDateInput(date);
+  const week = weeks.find(candidate => {
+    const monday = getWeekMonday(candidate);
+    return date >= monday && date <= new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  });
+  const weekday = (date.getDay() + 6) % 7;
+  const weekdayNames = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const semesterYear = 2026;
+  const inSemester = date.getFullYear() === semesterYear && date.getMonth() >= 8 && date.getMonth() <= 11;
+  const courses = week
+    ? week.courses.filter(course => course.day === weekday).map(course => ({
+        title: course.name, time: course.timeRange, location: course.room, color: course.color, type: 'course'
+      }))
+    : (inSemester ? myCourses.flatMap(course => (course.schedule || [])
+        .filter(entry => String(entry.day).toLocaleLowerCase().startsWith(weekdayNames[weekday]))
+        .map(entry => {
+          const [start, end] = String(entry.time).split(/[-–]/);
+          return { title: course.name, time: `${start}${end ? `–${end}` : ''}`, location: course.room, color: courseCategories[course.category]?.color || 'purple', type: 'course' };
+        })) : []);
+  const events = personalEvents.filter(event => event.date === iso).map(event => ({
+    title: event.title, time: `${event.startTime}${event.endTime ? `–${event.endTime}` : ''}`,
+    location: event.location || '', color: event.color || 'purple', type: 'event'
+  }));
+  const assignments = myCourses.flatMap(course => (course.assignments || [])
+    .filter(assignment => assignment.due === iso && assignment.status !== 'completed')
+    .map(assignment => ({ title: assignment.name, time: 'Devoir', location: course.name, color: 'orange', type: 'assignment' })));
+  return [...courses, ...events, ...assignments].sort((a, b) => a.time.localeCompare(b.time));
+}
+
+function createScheduleCard(item) {
+  const card = document.createElement('article');
+  card.className = `course ${item.color || 'purple'}`;
+  const title = document.createElement('strong');
+  title.textContent = item.title;
+  const detail = document.createElement('small');
+  detail.textContent = [formatTimeText(item.time), item.location].filter(Boolean).join(' · ');
+  card.append(title, detail);
+  return card;
+}
+
 function renderDailyView() {
-  // For now, just show the current weekly view
-  // This would be expanded to show a single day view
-  alert('Vue quotidienne - Fonctionnalité à venir');
+  const date = new Date(calendarViewDate);
+  const items = getScheduleItemsForDate(date);
+  buildCalendarGrid();
+  grid.classList.remove('calendar-grid-monthly', 'calendar-grid-annual');
+  grid.style.gridTemplateColumns = '92px minmax(240px, 1fr)';
+  grid.style.minWidth = '0';
+  const header = document.createElement('div');
+  header.className = 'cell head day';
+  header.textContent = formatCalendarDate(date, { weekday: 'long' });
+  grid.appendChild(header);
+  const dateHeader = document.createElement('div');
+  dateHeader.className = 'cell head';
+  dateHeader.textContent = formatCalendarDate(date, { year: true });
+  grid.appendChild(dateHeader);
+  const timeCell = document.createElement('div');
+  timeCell.className = 'cell time';
+  timeCell.textContent = items.length ? 'Aujourd’hui' : '—';
+  grid.append(timeCell);
+  const content = document.createElement('div');
+  content.className = 'cell daily-schedule-items';
+  if (!items.length) {
+    content.textContent = 'Aucun cours ou événement prévu pour cette journée.';
+  } else {
+    items.forEach(item => content.appendChild(createScheduleCard(item)));
+  }
+  grid.appendChild(content);
+  dateDisplay.textContent = new Intl.DateTimeFormat(currentSettings.language === 'en' ? 'en-US' : 'fr-FR', { dateStyle: 'full' }).format(date);
 }
 
-// Render monthly view
 function renderMonthlyView() {
-  // For now, just show the current weekly view
-  // This would be expanded to show a full month calendar
-  alert('Vue mensuelle - Fonctionnalité à venir');
+  const monthDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+  const monthStart = new Date(monthDate);
+  const sundayFirst = currentSettings.weekStart === 'sunday';
+  const firstOffset = sundayFirst ? monthStart.getDay() : (monthStart.getDay() + 6) % 7;
+  monthStart.setDate(monthStart.getDate() - firstOffset);
+  const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+  const locale = currentSettings.language === 'en' ? 'en-US' : 'fr-FR';
+  grid.replaceChildren();
+  grid.classList.add('calendar-grid-monthly');
+  grid.classList.remove('calendar-grid-annual');
+  grid.style.gridTemplateColumns = 'repeat(7, minmax(90px, 1fr))';
+  grid.style.minWidth = '680px';
+  const frenchWeekdays = sundayFirst ? ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'] : ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
+  const englishWeekdays = sundayFirst ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  frenchWeekdays.forEach((day, index) => {
+    const header = document.createElement('div');
+    header.className = 'cell head day';
+    header.textContent = currentSettings.language === 'en' ? englishWeekdays[index] : day;
+    grid.appendChild(header);
+  });
+  const cursor = new Date(monthStart);
+  while (cursor <= monthEnd || cursor.getDay() !== 1) {
+    const cellDate = new Date(cursor);
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cell month-day';
+    if (cellDate.getMonth() !== monthDate.getMonth()) cell.classList.add('outside-month');
+    const number = document.createElement('strong');
+    number.textContent = String(cellDate.getDate());
+    cell.appendChild(number);
+    getScheduleItemsForDate(cellDate).slice(0, 3).forEach(item => {
+      const entry = document.createElement('div');
+      entry.className = `month-event ${item.color || 'purple'}`;
+      entry.textContent = `${/^\d/.test(item.time) ? item.time.slice(0, 5) : '•'} ${item.title}`;
+      entry.title = [item.title, item.time, item.location].filter(Boolean).join(' · ');
+      cell.appendChild(entry);
+    });
+    cell.addEventListener('click', () => {
+      calendarViewDate = cellDate;
+      currentCalendarView = 'daily';
+      viewBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === 'daily'));
+      updateCalendarNavigationControls();
+      renderDailyView();
+    });
+    grid.appendChild(cell);
+    cursor.setDate(cursor.getDate() + 1);
+    if (cursor > monthEnd && cursor.getDay() === 1) break;
+  }
+  dateDisplay.textContent = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(monthDate);
+}
+
+function renderAnnualView() {
+  const year = calendarViewDate.getFullYear();
+  const locale = currentSettings.language === 'en' ? 'en-US' : 'fr-FR';
+  const weekdayLabels = currentSettings.language === 'en'
+    ? (currentSettings.weekStart === 'sunday' ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+    : (currentSettings.weekStart === 'sunday' ? ['D', 'L', 'M', 'M', 'J', 'V', 'S'] : ['L', 'M', 'M', 'J', 'V', 'S', 'D']);
+  grid.replaceChildren();
+  grid.classList.remove('calendar-grid-monthly');
+  grid.classList.add('calendar-grid-annual');
+  grid.style.gridTemplateColumns = 'repeat(3, minmax(220px, 1fr))';
+  grid.style.minWidth = '700px';
+  for (let month = 0; month < 12; month++) {
+    const monthDate = new Date(year, month, 1);
+    const panel = document.createElement('section');
+    panel.className = 'annual-month';
+    const title = document.createElement('button');
+    title.type = 'button';
+    title.className = 'annual-month-title';
+    title.textContent = new Intl.DateTimeFormat(locale, { month: 'long' }).format(monthDate);
+    title.addEventListener('click', () => {
+      calendarViewDate = new Date(year, month, 1);
+      currentCalendarView = 'monthly';
+      viewBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === 'monthly'));
+      updateCalendarNavigationControls();
+      renderMonthlyView();
+    });
+    panel.appendChild(title);
+    const days = document.createElement('div');
+    days.className = 'annual-month-days';
+    weekdayLabels.forEach(label => {
+      const dayName = document.createElement('span');
+      dayName.className = 'annual-weekday';
+      dayName.textContent = label;
+      days.appendChild(dayName);
+    });
+    const firstOffset = currentSettings.weekStart === 'sunday' ? monthDate.getDay() : (monthDate.getDay() + 6) % 7;
+    for (let blank = 0; blank < firstOffset; blank++) days.appendChild(document.createElement('span'));
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= lastDay; day++) {
+      const date = new Date(year, month, day);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'annual-day';
+      button.textContent = String(day);
+      const count = getScheduleItemsForDate(date).length;
+      if (count) {
+        button.classList.add('has-schedule');
+        button.title = `${count} élément${count > 1 ? 's' : ''} prévu${count > 1 ? 's' : ''}`;
+      }
+      button.addEventListener('click', () => {
+        calendarViewDate = date;
+        currentCalendarView = 'daily';
+        viewBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === 'daily'));
+        updateCalendarNavigationControls();
+        renderDailyView();
+      });
+      days.appendChild(button);
+    }
+    panel.appendChild(days);
+    grid.appendChild(panel);
+  }
+  dateDisplay.textContent = String(year);
 }
 
 // Render weekly view (current implementation)

@@ -191,6 +191,50 @@ body {
   grid-template-columns: 72px repeat(5, 1fr);
 }
 
+.calendar-grid-monthly .month-day {
+  min-height: 112px;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 7px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.calendar-grid-monthly .month-day:hover { background: #eef2ff; }
+.calendar-grid-monthly .month-day > strong { color: #172033; }
+.calendar-grid-monthly .month-day.outside-month { background: #f7f8fc; color: #a0a8b8; }
+.month-event {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #eef2ff;
+  color: #3730a3;
+}
+.month-event.green { background: #dcfce7; color: #166534; }
+.month-event.blue, .month-event.cyan { background: #dbeafe; color: #1e40af; }
+.month-event.orange, .month-event.pink { background: #ffedd5; color: #9a3412; }
+.month-event.purple { background: #ede9fe; color: #5b21b6; }
+.daily-schedule-items { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; }
+.calendar-grid-annual { gap: 12px; padding: 12px; }
+.annual-month { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--card); }
+.annual-month-title { border: 0; padding: 3px 0 8px; background: transparent; color: var(--text); font: inherit; font-weight: 700; text-transform: capitalize; cursor: pointer; }
+.annual-month-title:hover { color: #4f46e5; }
+.annual-month-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.annual-weekday { color: var(--muted); font-size: 11px; font-weight: 700; }
+.annual-day { min-width: 0; border: 0; border-radius: 50%; aspect-ratio: 1; padding: 0; background: transparent; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+.annual-day:hover { background: #eef2ff; }
+.annual-day.has-schedule { background: #e0e7ff; color: #3730a3; font-weight: 700; }
+body.dark-mode .annual-month { background: #1e293b; }
+body.dark-mode .annual-day.has-schedule { background: #3730a3; color: #eef2ff; }
+body.dark-mode .calendar-grid-monthly .month-day { background: #1e293b; }
+body.dark-mode .calendar-grid-monthly .month-day.outside-month { background: #172033; }
+
 .cell {
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
